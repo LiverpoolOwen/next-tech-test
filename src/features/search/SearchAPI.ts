@@ -1,12 +1,9 @@
 import axios from "axios";
+import { GenericResult } from "../../interfaces/GenericResult";
 import { SearchParams } from "../../interfaces/SearchParams";
-import { ApiResult } from "../../interfaces/SearchResult";
 
 const baseUrl = "https://itunes.apple.com/search?";
 const limit = 10;
-interface GenericResult {
-  data: ApiResult;
-}
 
 export const fetchArtists = async (
   searchParams: SearchParams
