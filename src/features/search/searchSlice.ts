@@ -34,6 +34,10 @@ export const searchSlice = createSlice({
       .addCase(fetchArtistsAsync.fulfilled, (state, action) => {
         state.status = "idle";
         var oldResults = [...state.value.results];
+        if (action.meta.arg.offset === undefined) {
+          state.value.results = [];
+          state.value.resultCount = 0;
+        }
         if (action.payload.resultCount > 0) {
           state.value.results = oldResults.concat(action.payload.results);
           state.value.resultCount += action.payload.results.length;
