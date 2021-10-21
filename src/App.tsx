@@ -1,13 +1,13 @@
 import React from 'react';
-import logo from './logo.svg';
 import { Search } from './features/search/Search';
 import './App.css';
+import { Typography } from '@mui/material';
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Next music search</h1>
+        <Typography variant="h1">Next music search</Typography>
         <Search />
       </header>
     </div>

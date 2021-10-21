@@ -1,9 +1,13 @@
 import React, { useState } from "react";
 import { useAppSelector, useAppDispatch } from "../../app/hooks";
-import { fetchArtistsAsync, selectSearchResult } from "./searchSlice";
-import { styled } from "@mui/material/styles";
+import {
+  fetchArtistsAsync,
+  selectSearchResult,
+  selectSearchResultStatus,
+} from "./searchSlice";
 import Card from "@mui/material/Card";
-import Grid from "@mui/material/Grid";
+import Paper from "@mui/material/Paper";
+import { styled } from "@mui/material/styles";
 import CardHeader from "@mui/material/CardHeader";
 import CardMedia from "@mui/material/CardMedia";
 import CardContent from "@mui/material/CardContent";
@@ -17,7 +21,10 @@ import FavoriteIcon from "@mui/icons-material/Favorite";
 import ShareIcon from "@mui/icons-material/Share";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import { Alert, Button, Container, Input, Stack } from "@mui/material";
+import InfiniteScroll from "react-infinite-scroll-component";
 import styles from "./Search.module.css";
+import { Box } from "@mui/system";
 
 const ExpandMore = styled((props: any) => {
   const { expand, ...other } = props;
@@ -30,116 +37,176 @@ const ExpandMore = styled((props: any) => {
   }),
 }));
 
+const Item = styled(Paper)(() => ({
+  textAlign: "center",
+}));
+
 export function Search() {
   const searchResult = useAppSelector(selectSearchResult);
+  const searchResultStatus = useAppSelector(selectSearchResultStatus);
   const dispatch = useAppDispatch();
   const [searchTerm, setSearchTerm] = useState("Ed Sheeran");
-  const [expanded, setExpanded] = React.useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [buttonPressed, setButtonPressed] = useState(false);
 
   const handleExpandClick = () => {
     setExpanded(!expanded);
   };
   return (
-    <div>
-      <div className={styles.row}>
-        <input
+    <Container>
+      <Box>
+        <Typography paragraph>
+          {" "}
+          Search for your favorite artists, albums and/or songs. Expand details
+          to see preview URLs.
+        </Typography>
+      </Box>
+      <Box m={10}>
+        {" "}
+        <Input
           className={styles.textbox}
           aria-label="Set search term"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <button
+        <Button
           className={styles.button}
-          onClick={() => dispatch(fetchArtistsAsync(searchTerm))}
+          variant="contained"
+          onClick={() => {
+            dispatch(fetchArtistsAsync({ searchTerm }));
+            setButtonPressed(true);
+          }}
         >
-          Search Artists
-        </button>
-      </div>
+          Search
+        </Button>
+        {searchResultStatus === "loading" && (
+          <Typography paragraph>Loading</Typography>
+        )}
+      </Box>
       <div className={styles.row}>
-        <Grid
-          direction="row"
-          justifyContent="center"
-          alignItems="center"
-          container
-          spacing={2}
-        >
-          {searchResult.results.map((result, index) => (
-            <Grid justifyContent="center" item xs={12}>
-              <Card sx={{ maxWidth: 345 }} key={index}>
-                <CardHeader
-                  avatar={
-                    <Avatar sx={{ bgcolor: red[500] }} aria-label="recipe">
-                      R
-                    </Avatar>
-                  }
-                  action={
-                    <IconButton aria-label="settings">
-                      <MoreVertIcon />
-                    </IconButton>
-                  }
-                  title={`Track Name: ${result.trackName}`}
-                  subheader="September 14, 2016"
-                />
-                <CardMedia
-                  component="img"
-                  height="194"
-                  image={result.artworkUrl100}
-                  alt="track artwork"
-                />
-                <CardContent>
-                  <Typography variant="body2" color="text.secondary">
-                    <p>
-                      <strong>Artist:</strong> {result.artistName}
-                    </p>
-                    <p>
-                      <strong>Collection Name:</strong> {result.collectionName}
-                    </p>
-                    <p>
-                      <strong>Country:</strong> {result.country}
-                    </p>
-                  </Typography>
-                </CardContent>
-                <CardActions disableSpacing>
-                  <IconButton aria-label="add to favorites">
-                    <FavoriteIcon />
-                  </IconButton>
-                  <IconButton aria-label="share">
-                    <ShareIcon />
-                  </IconButton>
-                  <ExpandMore
-                    expand={expanded}
-                    onClick={handleExpandClick}
-                    aria-expanded={expanded}
-                    aria-label="show more"
-                  >
-                    <ExpandMoreIcon />
-                  </ExpandMore>
-                </CardActions>
-                <Collapse in={expanded} timeout="auto" unmountOnExit>
-                  <CardContent>
-                    <Typography paragraph>more info:</Typography>
-                    <Typography paragraph>
-                      <p>
-                        <strong>Preview Url:</strong>{" "}
-                        <a href={result.previewUrl}>Click here</a>
-                      </p>
-                      <p>
-                        <strong>Track Explicitness:</strong>{" "}
-                        <a href={result.trackExplicitness}>Click here</a>
-                      </p>
-                    </Typography>
-                    <Typography paragraph>
-                      <p>
-                        <strong>Track Price:</strong> {result.trackPrice}
-                      </p>
-                    </Typography>
-                  </CardContent>
-                </Collapse>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+        <Stack spacing={2}>
+          {buttonPressed === true &&
+            searchResultStatus !== "loading" &&
+            searchResult.results.length === 0 && (
+              <Item>
+                <Box m={2} pt={3}>
+                  <Alert severity="error">
+                    No results where returned for this search
+                  </Alert>
+                </Box>
+              </Item>
+            )}
+          {searchResult.results.length > 0 && (
+            <InfiniteScroll
+              dataLength={searchResult.results.length}
+              next={() =>
+                dispatch(
+                  fetchArtistsAsync({
+                    searchTerm,
+                    offset: searchResult.results.length,
+                  })
+                )
+              }
+              hasMore={true}
+              loader={<h4>Loading...</h4>}
+              endMessage={
+                <Typography style={{ textAlign: "center" }} paragraph>
+                  <strong>Yay! You have seen it all</strong>
+                </Typography>
+              }
+            >
+              {searchResult.results.map((result, index) => (
+                <Box mt={5} key={index}>
+                  <Item>
+                    <Card sx={{ maxWidth: 345 }}>
+                      <CardHeader
+                        avatar={
+                          <Avatar
+                            sx={{ bgcolor: red[500] }}
+                            aria-label="recipe"
+                          >
+                            R
+                          </Avatar>
+                        }
+                        action={
+                          <IconButton
+                            aria-label="settings"
+                            onClick={() => alert("functionality goes here")}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                        }
+                        title={`Track Name: ${result.trackName}`}
+                        subheader="September 14, 2016"
+                      />
+                      <CardMedia
+                        component="img"
+                        height="194"
+                        image={result.artworkUrl100}
+                        alt="track artwork"
+                      />
+                      <CardContent>
+                        <Typography variant="body2" color="text.secondary">
+                          <Typography paragraph>
+                            <strong>Artist:</strong> {result.artistName}
+                          </Typography>
+                          <Typography paragraph>
+                            <strong>Collection Name:</strong>{" "}
+                            {result.collectionName}
+                          </Typography>
+                          <Typography paragraph>
+                            <strong>Country:</strong> {result.country}
+                          </Typography>
+                        </Typography>
+                      </CardContent>
+                      <CardActions disableSpacing>
+                        <IconButton
+                          aria-label="add to favorites"
+                          onClick={() => alert("functionality goes here")}
+                        >
+                          <FavoriteIcon />
+                        </IconButton>
+                        <IconButton
+                          aria-label="share"
+                          onClick={() => alert("functionality goes here")}
+                        >
+                          <ShareIcon />
+                        </IconButton>
+                        <ExpandMore
+                          expand={expanded}
+                          onClick={handleExpandClick}
+                          aria-expanded={expanded}
+                          aria-label="show more"
+                        >
+                          <ExpandMoreIcon />
+                        </ExpandMore>
+                      </CardActions>
+                      <Collapse in={expanded} timeout="auto" unmountOnExit>
+                        <CardContent>
+                          <Typography paragraph>more info:</Typography>
+                          <Typography paragraph>
+                            <strong>Preview Url:</strong>{" "}
+                            <a href={result.previewUrl}>Click here</a>
+                          </Typography>
+                          <Typography paragraph>
+                            <strong>Track Explicitness:</strong>{" "}
+                            {result.trackExplicitness === "notExplicit"
+                              ? "not explicit"
+                              : "explicit"}
+                          </Typography>
+                          <Typography paragraph>
+                            <strong>Track Price:</strong> {result.trackPrice}
+                          </Typography>
+                        </CardContent>
+                      </Collapse>
+                    </Card>
+                  </Item>
+                </Box>
+              ))}
+            </InfiniteScroll>
+          )}
+        </Stack>
       </div>
-    </div>
+    </Container>
   );
 }

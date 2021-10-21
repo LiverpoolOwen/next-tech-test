@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { RootState } from "../../app/store";
+import { SearchParams } from "../../interfaces/SearchParams";
 import { ApiResult } from "../../interfaces/SearchResult";
 import { fetchArtists } from "./SearchAPI";
 
@@ -14,9 +15,9 @@ const initialState: SearchState = {
 };
 
 export const fetchArtistsAsync = createAsyncThunk(
-  "counter/fetchArtists",
-  async (searchTerm: string) => {
-    const response = await fetchArtists(searchTerm);
+  "search/fetchArtists",
+  async (searchParams: SearchParams) => {
+    const response = await fetchArtists(searchParams);
     return response.data;
   }
 );
@@ -24,9 +25,7 @@ export const fetchArtistsAsync = createAsyncThunk(
 export const searchSlice = createSlice({
   name: "search",
   initialState,
-  reducers: {
-    search: (state) => {},
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       .addCase(fetchArtistsAsync.pending, (state) => {
@@ -34,13 +33,17 @@ export const searchSlice = createSlice({
       })
       .addCase(fetchArtistsAsync.fulfilled, (state, action) => {
         state.status = "idle";
-        state.value = action.payload;
+        var oldResults = [...state.value.results];
+        if (action.payload.resultCount > 0) {
+          state.value.results = oldResults.concat(action.payload.results);
+          state.value.resultCount += action.payload.results.length;
+        }
       });
   },
 });
 
-export const { search } = searchSlice.actions;
-
 export const selectSearchResult = (state: RootState) => state.search.value;
+export const selectSearchResultStatus = (state: RootState) =>
+  state.search.status;
 
 export default searchSlice.reducer;
